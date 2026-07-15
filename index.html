@@ -704,37 +704,63 @@ function updateBullet() {
   if (!bullet) return;
 
   bulletTrail.push({ x: bullet.x, y: bullet.y });
-  if (bulletTrail.length > 10) bulletTrail.shift(); // iz uzunluğu sınırlı (performans)
+  if (bulletTrail.length > 10) bulletTrail.shift();
 
-  bullet.x += bullet.vx;
-  bullet.y += bullet.vy;
+  // --- Tünelleme (duvar içinden geçme) önlemi ---
+  // Merminin bir frame'de alacağı mesafe, duvar kalınlığından daha
+  // büyük olabiliyor. Bunu önlemek için hareketi küçük alt-adımlara
+  // (substep) bölüp her adımda ayrı ayrı çarpışma kontrolü yapıyoruz.
+  const speed = Math.hypot(bullet.vx, bullet.vy);
+  if (speed < 0.0001) return;
 
-  if (bullet.x - bullet.radius < 0) { bullet.x = bullet.radius; bullet.vx *= -1; }
-  else if (bullet.x + bullet.radius > canvas.width) { bullet.x = canvas.width - bullet.radius; bullet.vx *= -1; }
+  let remaining = speed;      // bu frame'de kat edilecek toplam mesafe
+  const maxStep = 4;          // duvarların en incesinden (14px) küçük adım
 
-  if (bullet.y - bullet.radius < 0) { bullet.y = bullet.radius; bullet.vy *= -1; }
-  else if (bullet.y + bullet.radius > canvas.height) {
-    bullet = null; bulletTrail = [];
-    checkLoseCondition();
-    return;
-  }
+  while (remaining > 0.0001) {
+    const stepDist = Math.min(maxStep, remaining);
 
-  for (const wallRect of walls) {
-    if (circleRectCollision(bullet, wallRect)) {
-      resolveCircleRectBounce(bullet, wallRect);
-      break;
+    // Yön vektörü, hız değişse bile (sekme sonrası) her adımda
+    // güncel vx/vy üzerinden yeniden hesaplanır.
+    const currentSpeed = Math.hypot(bullet.vx, bullet.vy);
+    const ux = bullet.vx / currentSpeed;
+    const uy = bullet.vy / currentSpeed;
+
+    bullet.x += ux * stepDist;
+    bullet.y += uy * stepDist;
+    remaining -= stepDist;
+
+    // --- Ekran kenarlarından sekme ---
+    if (bullet.x - bullet.radius < 0) { bullet.x = bullet.radius; bullet.vx *= -1; }
+    else if (bullet.x + bullet.radius > canvas.width) { bullet.x = canvas.width - bullet.radius; bullet.vx *= -1; }
+
+    if (bullet.y - bullet.radius < 0) { bullet.y = bullet.radius; bullet.vy *= -1; }
+    else if (bullet.y + bullet.radius > canvas.height) {
+      bullet = null; bulletTrail = [];
+      checkLoseCondition();
+      return;
+    }
+
+    // --- Statik duvarlardan (dikdörtgen engeller) sekme ---
+    for (const wallRect of walls) {
+      if (circleRectCollision(bullet, wallRect)) {
+        resolveCircleRectBounce(bullet, wallRect);
+        break; // aynı adımda birden fazla duvara çarpma kontrolünü engelle
+      }
+    }
+
+    // --- Hedeflere çarpma kontrolü (her alt-adımda kontrol edilir,
+    //     böylece küçük hedefler de atlanmadan yakalanır) ---
+    for (const t of targets) {
+      if (!t.alive) continue;
+      const dist = Math.hypot(bullet.x - t.x, bullet.y - t.y);
+      if (dist < bullet.radius + t.radius) {
+        t.alive = false;
+        spawnParticles(t.x, t.y, '#F2A0A0');
+        updateUI();
+      }
     }
   }
 
-  for (const t of targets) {
-    if (!t.alive) continue;
-    const dist = Math.hypot(bullet.x - t.x, bullet.y - t.y);
-    if (dist < bullet.radius + t.radius) {
-      t.alive = false;
-      spawnParticles(t.x, t.y, '#F2A0A0');
-      updateUI();
-    }
-  }
   checkWinCondition();
 }
 
@@ -746,19 +772,52 @@ function circleRectCollision(circle, rect) {
 }
 function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
+// Çarpışma yüzeyinin GERÇEK normal vektörünü kullanarak mermiyi yansıtır.
+// Eksen bazlı (sadece yatay/dikey) yansıtma köşelerde mermiyi duvarın
+// içine hapsedip "hortum gibi dönme" (sürekli sekme) hatasına yol
+// açıyordu. Normal-vektör yansıması bu sorunu ortadan kaldırır.
 function resolveCircleRectBounce(circle, rect) {
   const closestX = clamp(circle.x, rect.x, rect.x + rect.w);
   const closestY = clamp(circle.y, rect.y, rect.y + rect.h);
-  const dx = circle.x - closestX, dy = circle.y - closestY;
-  const overlapX = circle.radius - Math.abs(dx);
-  const overlapY = circle.radius - Math.abs(dy);
-  if (overlapX < overlapY) {
-    circle.vx *= -1;
-    circle.x += dx > 0 ? overlapX : -overlapX;
+
+  let dx = circle.x - closestX;
+  let dy = circle.y - closestY;
+  let dist = Math.hypot(dx, dy);
+
+  if (dist < 0.0001) {
+    // Merminin merkezi tam olarak dikdörtgenin içinde kalmış
+    // (nadir ama mümkün bir durum). En yakın kenarı bulup oradan
+    // dışarı itip normali o kenara göre belirliyoruz.
+    const penLeft = circle.x - rect.x;
+    const penRight = (rect.x + rect.w) - circle.x;
+    const penTop = circle.y - rect.y;
+    const penBottom = (rect.y + rect.h) - circle.y;
+    const minPen = Math.min(penLeft, penRight, penTop, penBottom);
+
+    if (minPen === penLeft) { dx = -1; dy = 0; circle.x = rect.x - circle.radius; }
+    else if (minPen === penRight) { dx = 1; dy = 0; circle.x = rect.x + rect.w + circle.radius; }
+    else if (minPen === penTop) { dx = 0; dy = -1; circle.y = rect.y - circle.radius; }
+    else { dx = 0; dy = 1; circle.y = rect.y + rect.h + circle.radius; }
+    dist = 1;
   } else {
-    circle.vy *= -1;
-    circle.y += dy > 0 ? overlapY : -overlapY;
+    // Mermiyi, yüzeye tam değecek şekilde normal yönünde dışarı it
+    const overlap = circle.radius - dist;
+    if (overlap > 0) {
+      const nx = dx / dist, ny = dy / dist;
+      circle.x += nx * overlap;
+      circle.y += ny * overlap;
+    }
   }
+
+  // Yansıma formülü: v' = v - 2*(v·n)*n
+  const nx = dx / dist, ny = dy / dist;
+  const dot = bullet_vx_dot(circle, nx, ny);
+  circle.vx -= 2 * dot * nx;
+  circle.vy -= 2 * dot * ny;
+}
+
+function bullet_vx_dot(circle, nx, ny) {
+  return circle.vx * nx + circle.vy * ny;
 }
 
 // =========================================================
