@@ -810,6 +810,94 @@ const LEVELS = [
       { x: w * 0.833, y: h * 0.230, radius: 18 }
     ]
   }
+,
+  // Bölüm 13 - Rüzgar koridoru
+  {
+    walls: (w, h) => [
+      { x: w * 0.734, y: h * 0.285, w: w * 0.165, h: 14 },
+      { x: w * 0.627, y: h * 0.391, w: w * 0.255, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.676, y: h * 0.775, radius: 18 },
+      { x: w * 0.898, y: h * 0.594, radius: 18 },
+      { x: w * 0.701, y: h * 0.510, radius: 18 },
+      { x: w * 0.325, y: h * 0.350, radius: 18 },
+      { x: w * 0.107, y: h * 0.166, radius: 16 }
+    ]
+  },
+  // Bölüm 14 - Ters rüzgar
+  {
+    walls: (w, h) => [
+      { x: w * 0.085, y: h * 0.123, w: w * 0.202, h: 14 },
+      { x: w * 0.086, y: h * 0.387, w: w * 0.228, h: 14 },
+      { x: w * 0.087, y: h * 0.436, w: w * 0.197, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.322, y: h * 0.780, radius: 18 },
+      { x: w * 0.107, y: h * 0.612, radius: 18 },
+      { x: w * 0.316, y: h * 0.530, radius: 16 },
+      { x: w * 0.698, y: h * 0.380, radius: 17 },
+      { x: w * 0.894, y: h * 0.220, radius: 16 }
+    ]
+  },
+  // Bölüm 15 - Sarmal geçit
+  {
+    walls: (w, h) => [
+      { x: w * 0.708, y: h * 0.219, w: w * 0.258, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.679, y: h * 0.785, radius: 16 },
+      { x: w * 0.895, y: h * 0.630, radius: 17 },
+      { x: w * 0.675, y: h * 0.550, radius: 16 },
+      { x: w * 0.290, y: h * 0.410, radius: 15 },
+      { x: w * 0.150, y: h * 0.250, radius: 16 }
+    ]
+  },
+  // Bölüm 16 - Ters sarmal
+  {
+    walls: (w, h) => [
+      { x: w * 0.628, y: h * 0.098, w: w * 0.187, h: 14 },
+      { x: w * 0.045, y: h * 0.475, w: w * 0.225, h: 14 },
+      { x: w * 0.115, y: h * 0.260, w: w * 0.221, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.323, y: h * 0.790, radius: 15 },
+      { x: w * 0.108, y: h * 0.644, radius: 15 },
+      { x: w * 0.326, y: h * 0.570, radius: 15 },
+      { x: w * 0.739, y: h * 0.430, radius: 16 },
+      { x: w * 0.789, y: h * 0.270, radius: 15 }
+    ]
+  },
+  // Bölüm 17 - Uzun mesafe
+  {
+    walls: (w, h) => [
+      { x: w * 0.072, y: h * 0.608, w: w * 0.210, h: 14 },
+      { x: w * 0.724, y: h * 0.213, w: w * 0.202, h: 14 },
+      { x: w * 0.702, y: h * 0.276, w: w * 0.183, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.689, y: h * 0.790, radius: 15 },
+      { x: w * 0.895, y: h * 0.658, radius: 14 },
+      { x: w * 0.649, y: h * 0.580, radius: 14 },
+      { x: w * 0.240, y: h * 0.450, radius: 15 },
+      { x: w * 0.264, y: h * 0.290, radius: 16 }
+    ]
+  },
+  // Bölüm 18 - Final 2 - son sınav
+  {
+    walls: (w, h) => [
+      { x: w * 0.054, y: h * 0.184, w: w * 0.183, h: 14 },
+      { x: w * 0.720, y: h * 0.153, w: w * 0.188, h: 14 },
+      { x: w * 0.074, y: h * 0.269, w: w * 0.217, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.313, y: h * 0.795, radius: 15 },
+      { x: w * 0.105, y: h * 0.672, radius: 15 },
+      { x: w * 0.350, y: h * 0.600, radius: 15 },
+      { x: w * 0.792, y: h * 0.470, radius: 15 },
+      { x: w * 0.664, y: h * 0.310, radius: 16 }
+    ]
+  }
 ];
 let currentLevelIndex = 0;
 let walls = [];
