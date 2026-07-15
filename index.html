@@ -2,10 +2,10 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>One Bullet</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   html, body {
     width: 100%;
@@ -13,7 +13,9 @@
     background: #05060a;
     overflow: hidden;
     touch-action: none;
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   #gameContainer {
@@ -41,10 +43,22 @@
       0 0 80px rgba(159,211,222,0.05);
   }
 
+  #shakeLayer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
   canvas {
     display: block;
     width: 100%;
     height: 100%;
+  }
+
+  #fxCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    pointer-events: none;
   }
 
   #ui {
@@ -71,21 +85,32 @@
     font-size: 13px;
     letter-spacing: 0.5px;
     font-weight: 600;
+    backdrop-filter: blur(6px);
+    transition: transform 0.15s ease;
   }
+  .badge.pop { transform: scale(1.18); }
 
   .badge .dot {
     width: 8px; height: 8px;
     border-radius: 50%;
   }
 
-  #bulletInfo .dot { background: #9FD3DE; }
-  #targetInfo .dot { background: #F2A0A0; }
+  #bulletInfo .dot { background: #9FD3DE; box-shadow: 0 0 8px 1px rgba(159,211,222,0.7); }
+  #targetInfo .dot { background: #F2A0A0; box-shadow: 0 0 8px 1px rgba(242,160,160,0.7); }
+  #starInfo .dot { background: #F4D06F; box-shadow: 0 0 8px 1px rgba(244,208,111,0.7); }
 
-  #menuBackBtn {
+  #topBtns {
     position: absolute;
     top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 14px;
+    z-index: 7;
+  }
+
+  .iconBtn {
     width: 40px;
     height: 34px;
     border-radius: 10px;
@@ -93,13 +118,20 @@
     background: rgba(255,255,255,0.05);
     cursor: pointer;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.75);
+    font-size: 15px;
+  }
+  .iconBtn:active { transform: scale(0.92); }
+
+  #menuBackBtn {
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    z-index: 7;
   }
-  #menuBackBtn:active { transform: translateX(-50%) scale(0.92); }
   #menuBackBtn span {
     display: block;
     width: 16px;
@@ -107,6 +139,8 @@
     border-radius: 2px;
     background: rgba(255,255,255,0.75);
   }
+
+  #soundBtn { font-size: 16px; }
 
   #title {
     position: absolute;
@@ -123,9 +157,25 @@
     white-space: nowrap;
   }
 
+  #comboText {
+    position: absolute;
+    top: 88px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #F4D06F;
+    font-size: 12px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  #comboText.show { opacity: 1; }
+
   #message {
     position: absolute;
-    top: 40%;
+    top: 36%;
     left: 50%;
     transform: translate(-50%, -50%);
     color: #fff;
@@ -140,9 +190,31 @@
     max-width: 80%;
   }
 
+  #starsRow {
+    position: absolute;
+    top: 44%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    gap: 10px;
+    z-index: 6;
+    font-size: 34px;
+  }
+  #starsRow span {
+    opacity: 0.15;
+    transform: scale(0.4);
+    transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.35s ease;
+    filter: drop-shadow(0 0 8px rgba(244,208,111,0));
+  }
+  #starsRow span.lit {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(244,208,111,0.8));
+  }
+
   #restartBtn {
     position: absolute;
-    top: 53%;
+    top: 56%;
     left: 50%;
     transform: translateX(-50%);
     padding: 12px 28px;
@@ -163,7 +235,7 @@
 
   #menuResultBtn {
     position: absolute;
-    top: 62%;
+    top: 65%;
     left: 50%;
     transform: translateX(-50%);
     padding: 9px 22px;
@@ -224,15 +296,23 @@
     font-size: 13px;
     letter-spacing: 1px;
     margin-top: 8px;
-    margin-bottom: 34px;
+    margin-bottom: 28px;
     max-width: 260px;
   }
 
-  #levelProgressText {
-    color: rgba(255,255,255,0.3);
-    font-size: 12px;
-    letter-spacing: 1px;
-    margin-bottom: 24px;
+  #totalStarsBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(244,208,111,0.08);
+    border: 1px solid rgba(244,208,111,0.25);
+    padding: 8px 18px;
+    border-radius: 999px;
+    color: #F4D06F;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 26px;
   }
 
   .menuBtn {
@@ -254,7 +334,7 @@
     box-shadow: 0 10px 26px rgba(127, 166, 201, 0.3);
   }
 
-  #howToBtn {
+  #levelsBtn, #howToBtn {
     background: rgba(255,255,255,0.06);
     color: #dfe7ee;
     border: 1px solid rgba(255,255,255,0.12);
@@ -268,7 +348,7 @@
     letter-spacing: 2px;
   }
 
-  #howToPanel {
+  #howToPanel, #levelSelectPanel {
     display: none;
     position: absolute;
     top: 0; left: 0;
@@ -277,11 +357,12 @@
     z-index: 11;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 40px 32px;
+    padding: 40px 26px;
     text-align: left;
+    overflow-y: auto;
   }
-  #howToPanel h2 {
+  #howToPanel { justify-content: center; }
+  #howToPanel h2, #levelSelectPanel h2 {
     color: #fff;
     font-size: 20px;
     letter-spacing: 1px;
@@ -308,7 +389,7 @@
     border-radius: 50%;
     background: #9FD3DE;
   }
-  #closeHowTo {
+  #closeHowTo, #closeLevels {
     margin-top: 30px;
     background: linear-gradient(135deg, #9FD3DE, #7FA6C9);
     color: #1a1c26;
@@ -318,6 +399,50 @@
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
+    align-self: center;
+  }
+
+  #levelGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .levelCard {
+    aspect-ratio: 1;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+  }
+  .levelCard:active { transform: scale(0.94); }
+  .levelCard .num {
+    color: #eef2f7;
+    font-size: 20px;
+    font-weight: 800;
+  }
+  .levelCard .stars {
+    font-size: 10px;
+    color: #F4D06F;
+    letter-spacing: 1px;
+  }
+  .levelCard.locked {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .levelCard.locked .num { font-size: 15px; }
+  .levelCard.current {
+    border-color: #9FD3DE;
+    box-shadow: 0 0 0 1px #9FD3DE, 0 0 16px rgba(159,211,222,0.3);
   }
 </style>
 </head>
@@ -325,10 +450,18 @@
 
 <div id="gameContainer">
   <div id="canvasWrapper">
-    <canvas id="gameCanvas"></canvas>
+    <div id="shakeLayer">
+      <canvas id="gameCanvas"></canvas>
+      <canvas id="fxCanvas"></canvas>
+    </div>
 
-    <div id="title">BÖLÜM 1 / 6</div>
-    <button id="menuBackBtn" title="Ana Menü"><span></span><span></span><span></span></button>
+    <div id="title">BÖLÜM 1 / 12</div>
+    <div id="comboText">2X SEKME BONUSU</div>
+
+    <div id="topBtns">
+      <button class="iconBtn" id="menuBackBtn" title="Ana Menü"><span></span><span></span><span></span></button>
+      <button class="iconBtn" id="soundBtn" title="Ses">🔊</button>
+    </div>
 
     <div id="ui">
       <div class="badge" id="bulletInfo"><span class="dot"></span><span id="bulletText">1</span></div>
@@ -336,6 +469,7 @@
     </div>
 
     <div id="message"></div>
+    <div id="starsRow"><span>★</span><span>★</span><span>★</span></div>
     <button id="restartBtn">Tekrar Oyna</button>
     <button id="menuResultBtn">Ana Menü</button>
 
@@ -344,10 +478,18 @@
       <div id="menuLogoDot"></div>
       <div id="menuTitle">ONE<br><span>BULLET</span></div>
       <div id="menuSubtitle">Tek mermi. Tek şans. Sekmeleri hesapla, hedefleri yok et.</div>
-      <div id="levelProgressText">6 bölüm hazır</div>
+      <div id="totalStarsBadge">★ <span id="totalStarsText">0 / 36</span></div>
       <button class="menuBtn" id="playBtn">OYNA</button>
+      <button class="menuBtn" id="levelsBtn">BÖLÜMLER</button>
       <button class="menuBtn" id="howToBtn">NASIL OYNANIR</button>
       <div id="menuFooter">MINIMALIST PHYSICS PUZZLE</div>
+    </div>
+
+    <!-- ================= BÖLÜM SEÇİMİ ================= -->
+    <div id="levelSelectPanel">
+      <h2>BÖLÜM SEÇ</h2>
+      <div id="levelGrid"></div>
+      <button id="closeLevels">GERİ</button>
     </div>
 
     <!-- ================= NASIL OYNANIR PANELİ ================= -->
@@ -359,7 +501,8 @@
         <li>Bıraktığında mermi fırlar ve duvarlardan/kenarlardan seker.</li>
         <li>Her bölümde sadece 1 mermi hakkın var — dikkatli nişan al.</li>
         <li>Ekrandaki tüm kırmızı hedefleri yok ederek bölümü tamamla.</li>
-        <li>6 bölümü sırayla geçerek oyunu tamamla.</li>
+        <li>Az sekme ile hızlı bitirirsen daha çok yıldız kazanırsın.</li>
+        <li>12 bölümü sırayla geçerek oyunu tamamla.</li>
       </ul>
       <button id="closeHowTo">ANLADIM</button>
     </div>
@@ -368,58 +511,158 @@
 
 <script>
 /* =========================================================
-   ONE BULLET - Minimalist Fizik Bulmaca Oyunu Prototipi
+   ONE BULLET - Mobil Fizik Bulmaca Oyunu
    HTML5 Canvas + Vanilla JavaScript
-   Performans için: statik sahne (arka plan + duvarlar) tek
-   seferlik offscreen canvas'a çizilir, her frame'de sadece
-   dinamik öğeler (hedef, mermi, parçacık) yeniden çizilir.
+   Statik sahne (arka plan + duvarlar) offscreen canvas'a
+   bir kez çizilir; her frame sadece dinamik öğeler yeniden
+   çizilir. Ses efektleri Web Audio API ile anlık sentezlenir
+   (harici dosya gerektirmez), ilerleme localStorage'da tutulur.
    ========================================================= */
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const fxCanvas = document.getElementById('fxCanvas');
+const fxCtx = fxCanvas.getContext('2d');
 const wrapper = document.getElementById('canvasWrapper');
+const shakeLayer = document.getElementById('shakeLayer');
 
 const bulletText = document.getElementById('bulletText');
 const targetText = document.getElementById('targetText');
+const bulletInfo = document.getElementById('bulletInfo');
+const targetInfo = document.getElementById('targetInfo');
 const messageEl = document.getElementById('message');
+const starsRow = document.getElementById('starsRow');
 const restartBtn = document.getElementById('restartBtn');
 const menuResultBtn = document.getElementById('menuResultBtn');
 const menuBackBtn = document.getElementById('menuBackBtn');
+const soundBtn = document.getElementById('soundBtn');
 const mainMenu = document.getElementById('mainMenu');
 const playBtn = document.getElementById('playBtn');
+const levelsBtn = document.getElementById('levelsBtn');
 const howToBtn = document.getElementById('howToBtn');
 const howToPanel = document.getElementById('howToPanel');
 const closeHowTo = document.getElementById('closeHowTo');
+const levelSelectPanel = document.getElementById('levelSelectPanel');
+const closeLevels = document.getElementById('closeLevels');
+const levelGrid = document.getElementById('levelGrid');
 const titleEl = document.getElementById('title');
+const comboText = document.getElementById('comboText');
+const totalStarsText = document.getElementById('totalStarsText');
 
-// Performans: canvas çözünürlüğünü CSS boyutuyla birebir tutuyoruz
-// (yüksek DPR ölçekleme mobilde ciddi yavaşlamaya sebep olur).
 function resizeCanvas() {
   const rect = wrapper.getBoundingClientRect();
   canvas.width = Math.round(rect.width);
   canvas.height = Math.round(rect.height);
+  fxCanvas.width = canvas.width;
+  fxCanvas.height = canvas.height;
 }
 resizeCanvas();
+
+// =========================================================
+//  SES SİSTEMİ (Web Audio API - sentezlenmiş, dosyasız)
+// =========================================================
+let audioCtx = null;
+let soundOn = true;
+function ensureAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { soundOn = false; }
+  } else if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+function playTone(freq, duration, type, startGain, opts) {
+  if (!soundOn || !audioCtx) return;
+  opts = opts || {};
+  const t0 = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, t0);
+  if (opts.slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(opts.slideTo, 1), t0 + duration);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(startGain || 0.2, t0 + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t0);
+  osc.stop(t0 + duration + 0.02);
+}
+function playNoise(duration, startGain) {
+  if (!soundOn || !audioCtx) return;
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(startGain || 0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+  src.connect(gain).connect(audioCtx.destination);
+  src.start();
+}
+const SFX = {
+  draw: () => playTone(220, 0.05, 'sine', 0.05),
+  launch: () => { playTone(160, 0.18, 'sawtooth', 0.18, { slideTo: 500 }); playNoise(0.08, 0.08); },
+  bounce: (power) => { playTone(300 + power * 200, 0.09, 'triangle', 0.14); },
+  hit: () => { playTone(520, 0.14, 'square', 0.16, { slideTo: 180 }); playNoise(0.06, 0.1); },
+  win: () => { [0,4,7,12].forEach((semi,i) => setTimeout(() => playTone(440 * Math.pow(2, semi/12), 0.3, 'sine', 0.14), i*90)); },
+  lose: () => { playTone(220, 0.4, 'sawtooth', 0.15, { slideTo: 60 }); },
+  ui: () => playTone(700, 0.05, 'sine', 0.08),
+  star: (i) => setTimeout(() => playTone(660 + i*140, 0.18, 'sine', 0.14), i*120)
+};
+function vibrate(pattern) {
+  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch(e) {} }
+}
+soundBtn.addEventListener('click', () => {
+  ensureAudio();
+  soundOn = !soundOn;
+  soundBtn.textContent = soundOn ? '🔊' : '🔇';
+  SFX.ui();
+});
+
+// =========================================================
+//  İLERLEME KAYDI (localStorage)
+// =========================================================
+const SAVE_KEY = 'oneBullet_progress_v1';
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { stars: {}, unlocked: 1 };
+}
+function saveProgress() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch (e) {}
+}
+let progress = loadProgress();
+
+function totalStars() {
+  let sum = 0;
+  for (const k in progress.stars) sum += progress.stars[k];
+  return sum;
+}
+function updateTotalStarsBadge() {
+  totalStarsText.textContent = totalStars() + ' / ' + (LEVELS.length * 3);
+}
 
 // ---- Oyun Durumu ----
 const GAME_STATE = { MENU: 'menu', AIMING: 'aiming', FIRING: 'firing', WIN: 'win', LOSE: 'lose' };
 let currentState = GAME_STATE.MENU;
 let bulletsLeft = 1;
+let bounceCount = 0;
 
 // ---- Launcher ----
-const launcher = { x: 0, y: 0, radius: 20, angle: -Math.PI / 2 };
+const launcher = { x: 0, y: 0, radius: 20, angle: -Math.PI / 2, recoil: 0 };
 function updateLauncherPosition() {
   launcher.x = canvas.width / 2;
   launcher.y = canvas.height - 70;
 }
 
 // =========================================================
-//  BÖLÜM (LEVEL) TANIMLARI
-//  Her bölüm; duvar (walls) ve hedef (targets) düzenini
-//  canvas genişlik/yükseklik oranına göre üretir.
+//  BÖLÜM (LEVEL) TANIMLARI — 12 bölüm, artan zorluk
 // =========================================================
 const LEVELS = [
-  // Bölüm 1 - Giriş: tek engel, kolay yerleşim
   {
     walls: (w, h) => [
       { x: w * 0.15, y: h * 0.45, w: w * 0.45, h: 16 }
@@ -430,7 +673,6 @@ const LEVELS = [
       { x: w * 0.50, y: h * 0.60, radius: 19 }
     ]
   },
-  // Bölüm 2 - İki engel
   {
     walls: (w, h) => [
       { x: w * 0.15, y: h * 0.45, w: w * 0.45, h: 16 },
@@ -442,7 +684,6 @@ const LEVELS = [
       { x: w * 0.50, y: h * 0.65, radius: 18 }
     ]
   },
-  // Bölüm 3 - Orijinal düzen (3 duvar)
   {
     walls: (w, h) => [
       { x: w * 0.15, y: h * 0.45, w: w * 0.45, h: 16 },
@@ -455,7 +696,6 @@ const LEVELS = [
       { x: w * 0.50, y: h * 0.65, radius: 18 }
     ]
   },
-  // Bölüm 4 - Dar koridor
   {
     walls: (w, h) => [
       { x: 0, y: h * 0.40, w: w * 0.62, h: 14 },
@@ -468,7 +708,6 @@ const LEVELS = [
       { x: w * 0.70, y: h * 0.75, radius: 17 }
     ]
   },
-  // Bölüm 5 - Çapraz engeller
   {
     walls: (w, h) => [
       { x: w * 0.05, y: h * 0.30, w: w * 0.35, h: 14 },
@@ -482,7 +721,6 @@ const LEVELS = [
       { x: w * 0.50, y: h * 0.78, radius: 17 }
     ]
   },
-  // Bölüm 6 - Final: yoğun engel dizilimi
   {
     walls: (w, h) => [
       { x: w * 0.10, y: h * 0.25, w: w * 0.30, h: 14 },
@@ -496,6 +734,103 @@ const LEVELS = [
       { x: w * 0.82, y: h * 0.14, radius: 16 },
       { x: w * 0.50, y: h * 0.85, radius: 16 }
     ]
+  },
+  // Bölüm 7 - Simetrik huni
+  {
+    walls: (w, h) => [
+      { x: 0, y: h * 0.32, w: w * 0.38, h: 14 },
+      { x: w * 0.62, y: h * 0.32, w: w * 0.38, h: 14 },
+      { x: w * 0.38, y: h * 0.32, w: 14, h: h * 0.16 },
+      { x: w * 0.30, y: h * 0.62, w: w * 0.40, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.15, y: h * 0.15, radius: 16 },
+      { x: w * 0.85, y: h * 0.15, radius: 16 },
+      { x: w * 0.50, y: h * 0.80, radius: 16 },
+      { x: w * 0.50, y: h * 0.48, radius: 14 }
+    ]
+  },
+  // Bölüm 8 - Dar zigzag koridor
+  {
+    walls: (w, h) => [
+      { x: 0, y: h * 0.25, w: w * 0.70, h: 14 },
+      { x: w * 0.30, y: h * 0.45, w: w * 0.70, h: 14 },
+      { x: 0, y: h * 0.65, w: w * 0.70, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.85, y: h * 0.14, radius: 15 },
+      { x: w * 0.15, y: h * 0.35, radius: 15 },
+      { x: w * 0.85, y: h * 0.55, radius: 15 },
+      { x: w * 0.15, y: h * 0.80, radius: 15 }
+    ]
+  },
+  // Bölüm 9 - Merkez kule
+  {
+    walls: (w, h) => [
+      { x: w * 0.44, y: h * 0.30, w: 16, h: h * 0.40 },
+      { x: w * 0.10, y: h * 0.20, w: w * 0.25, h: 14 },
+      { x: w * 0.65, y: h * 0.20, w: w * 0.25, h: 14 },
+      { x: w * 0.10, y: h * 0.68, w: w * 0.25, h: 14 },
+      { x: w * 0.65, y: h * 0.68, w: w * 0.25, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.18, y: h * 0.13, radius: 15 },
+      { x: w * 0.82, y: h * 0.13, radius: 15 },
+      { x: w * 0.18, y: h * 0.85, radius: 15 },
+      { x: w * 0.82, y: h * 0.85, radius: 15 }
+    ]
+  },
+  // Bölüm 10 - Elmas geçit
+  {
+    walls: (w, h) => [
+      { x: w * 0.20, y: h * 0.22, w: w * 0.20, h: 14 },
+      { x: w * 0.60, y: h * 0.22, w: w * 0.20, h: 14 },
+      { x: w * 0.08, y: h * 0.48, w: 14, h: h * 0.16 },
+      { x: w * 0.78, y: h * 0.48, w: 14, h: h * 0.16 },
+      { x: w * 0.20, y: h * 0.72, w: w * 0.20, h: 14 },
+      { x: w * 0.60, y: h * 0.72, w: w * 0.20, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.50, y: h * 0.12, radius: 15 },
+      { x: w * 0.50, y: h * 0.50, radius: 15 },
+      { x: w * 0.50, y: h * 0.90, radius: 15 }
+    ]
+  },
+  // Bölüm 11 - Sıkışık labirent
+  {
+    walls: (w, h) => [
+      { x: 0, y: h * 0.22, w: w * 0.55, h: 14 },
+      { x: w * 0.75, y: h * 0.22, w: w * 0.25, h: 14 },
+      { x: w * 0.20, y: h * 0.40, w: w * 0.60, h: 14 },
+      { x: 0, y: h * 0.58, w: w * 0.55, h: 14 },
+      { x: w * 0.75, y: h * 0.58, w: w * 0.25, h: 14 },
+      { x: w * 0.20, y: h * 0.76, w: w * 0.60, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.87, y: h * 0.12, radius: 14 },
+      { x: w * 0.10, y: h * 0.50, radius: 14 },
+      { x: w * 0.87, y: h * 0.68, radius: 14 },
+      { x: w * 0.50, y: h * 0.90, radius: 14 }
+    ]
+  },
+  // Bölüm 12 - Final: en yoğun düzen
+  {
+    walls: (w, h) => [
+      { x: w * 0.08, y: h * 0.18, w: w * 0.24, h: 14 },
+      { x: w * 0.68, y: h * 0.18, w: w * 0.24, h: 14 },
+      { x: w * 0.38, y: h * 0.30, w: 14, h: h * 0.14 },
+      { x: w * 0.15, y: h * 0.42, w: w * 0.22, h: 14 },
+      { x: w * 0.63, y: h * 0.42, w: w * 0.22, h: 14 },
+      { x: w * 0.44, y: h * 0.50, w: 14, h: h * 0.14 },
+      { x: w * 0.10, y: h * 0.68, w: w * 0.30, h: 14 },
+      { x: w * 0.60, y: h * 0.68, w: w * 0.30, h: 14 }
+    ],
+    targets: (w, h) => [
+      { x: w * 0.20, y: h * 0.10, radius: 14 },
+      { x: w * 0.80, y: h * 0.10, radius: 14 },
+      { x: w * 0.50, y: h * 0.60, radius: 14 },
+      { x: w * 0.50, y: h * 0.88, radius: 14 }
+    ]
   }
 ];
 
@@ -504,10 +839,6 @@ let walls = [];
 let targets = [];
 
 // ---- Statik sahne katmanı (performans optimizasyonu) ----
-// Arka plan gradyanı, nokta ızgarası ve duvarlar SADECE bölüm
-// yüklendiğinde/boyut değiştiğinde bir kez çizilip bir
-// offscreen canvas'a "pişiriliyor". Ana render döngüsü bu
-// katmanı sadece kopyalar (drawImage), tekrar hesaplamaz.
 let staticLayer = document.createElement('canvas');
 let staticCtx = staticLayer.getContext('2d');
 
@@ -516,14 +847,12 @@ function buildStaticLayer() {
   staticLayer.height = canvas.height;
   const w = canvas.width, h = canvas.height;
 
-  // Arka plan gradyanı
   const grad = staticCtx.createLinearGradient(0, 0, 0, h);
   grad.addColorStop(0, '#1a1c26');
   grad.addColorStop(1, '#0a0b10');
   staticCtx.fillStyle = grad;
   staticCtx.fillRect(0, 0, w, h);
 
-  // Nokta ızgarası (tek seferlik maliyet)
   staticCtx.fillStyle = 'rgba(255,255,255,0.035)';
   const gridSize = 28;
   for (let x = gridSize / 2; x < w; x += gridSize) {
@@ -534,14 +863,12 @@ function buildStaticLayer() {
     }
   }
 
-  // Launcher altında yumuşak spot ışığı (pastel)
   const spot = staticCtx.createRadialGradient(launcher.x, launcher.y, 0, launcher.x, launcher.y, 180);
   spot.addColorStop(0, 'rgba(159,211,222,0.08)');
   spot.addColorStop(1, 'rgba(159,211,222,0)');
   staticCtx.fillStyle = spot;
   staticCtx.fillRect(0, 0, w, h);
 
-  // Duvarlar
   for (const wallRect of walls) {
     staticCtx.save();
     staticCtx.shadowColor = 'rgba(0,0,0,0.5)';
@@ -583,19 +910,35 @@ const BULLET_SPEED = 11;
 const BULLET_RADIUS = 7;
 const MAX_DRAG_DISTANCE = 140;
 
-// ---- Parçacık efektleri (hedef yok edildiğinde patlama) ----
-// Performans için parçacık sayısı sınırlı tutuluyor ve glow kaldırıldı.
+// ---- Parçacık efektleri ----
 let particles = [];
-function spawnParticles(x, y, color) {
-  const count = 10; // mobilde akıcılık için azaltıldı
+function spawnParticles(x, y, color, count) {
+  count = count || 12;
   for (let i = 0; i < count; i++) {
     const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
-    const speed = 2 + Math.random() * 3.5;
+    const speed = 2 + Math.random() * 4;
     particles.push({
       x, y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       life: 1,
+      size: 2 + Math.random() * 2.5,
+      color
+    });
+  }
+}
+function spawnSparks(x, y, nx, ny, color) {
+  const count = 6;
+  for (let i = 0; i < count; i++) {
+    const spread = (Math.random() - 0.5) * 1.4;
+    const baseAngle = Math.atan2(ny, nx) + spread;
+    const speed = 1.5 + Math.random() * 2.5;
+    particles.push({
+      x, y,
+      vx: Math.cos(baseAngle) * speed,
+      vy: Math.sin(baseAngle) * speed,
+      life: 0.6,
+      size: 1.5 + Math.random() * 1.5,
       color
     });
   }
@@ -613,11 +956,40 @@ function drawParticles() {
   for (const p of particles) {
     ctx.globalAlpha = Math.max(p.life, 0);
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 3.5 * p.life, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, (p.size || 3.5) * p.life, 0, Math.PI * 2);
     ctx.fillStyle = p.color;
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+}
+
+// ---- Ekran sarsıntısı ----
+let shakeTime = 0, shakeMag = 0;
+function triggerShake(mag, duration) {
+  shakeMag = mag;
+  shakeTime = duration;
+}
+function updateShake() {
+  if (shakeTime > 0) {
+    shakeTime -= 1;
+    const dx = (Math.random() - 0.5) * shakeMag;
+    const dy = (Math.random() - 0.5) * shakeMag;
+    shakeLayer.style.transform = `translate(${dx}px, ${dy}px)`;
+  } else if (shakeLayer.style.transform !== '') {
+    shakeLayer.style.transform = '';
+  }
+}
+
+// ---- Ekran flaşı (fx canvas) ----
+let flashAlpha = 0;
+function triggerFlash(a) { flashAlpha = a; }
+function drawFlash() {
+  fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+  if (flashAlpha > 0.01) {
+    fxCtx.fillStyle = `rgba(255,255,255,${flashAlpha})`;
+    fxCtx.fillRect(0, 0, fxCanvas.width, fxCanvas.height);
+    flashAlpha *= 0.85;
+  }
 }
 
 // ---- Aiming değişkenleri ----
@@ -645,18 +1017,23 @@ function getPointerPos(evt) {
 
 function handlePointerDown(evt) {
   evt.preventDefault();
+  ensureAudio();
   if (currentState !== GAME_STATE.AIMING || bulletsLeft <= 0) return;
   const pos = getPointerPos(evt);
   isAiming = true;
   aimStart = { x: launcher.x, y: launcher.y };
   aimCurrent = pos;
 }
+let lastDrawTick = 0;
 function handlePointerMove(evt) {
   evt.preventDefault();
   if (!isAiming) return;
   aimCurrent = getPointerPos(evt);
   const dx = aimStart.x - aimCurrent.x, dy = aimStart.y - aimCurrent.y;
-  if (Math.hypot(dx, dy) > 5) launcher.angle = Math.atan2(dy, dx);
+  if (Math.hypot(dx, dy) > 5) {
+    launcher.angle = Math.atan2(dy, dx);
+    if (frameCount - lastDrawTick > 6) { lastDrawTick = frameCount; SFX.draw(); }
+  }
 }
 function handlePointerUp(evt) {
   evt.preventDefault();
@@ -693,8 +1070,13 @@ function fireBullet() {
   };
   bulletTrail = [];
   bulletsLeft--;
+  bounceCount = 0;
   updateUI();
   currentState = GAME_STATE.FIRING;
+  launcher.recoil = 10;
+  SFX.launch();
+  vibrate(18);
+  triggerShake(4, 5);
 }
 
 // =========================================================
@@ -704,23 +1086,17 @@ function updateBullet() {
   if (!bullet) return;
 
   bulletTrail.push({ x: bullet.x, y: bullet.y });
-  if (bulletTrail.length > 10) bulletTrail.shift();
+  if (bulletTrail.length > 12) bulletTrail.shift();
 
-  // --- Tünelleme (duvar içinden geçme) önlemi ---
-  // Merminin bir frame'de alacağı mesafe, duvar kalınlığından daha
-  // büyük olabiliyor. Bunu önlemek için hareketi küçük alt-adımlara
-  // (substep) bölüp her adımda ayrı ayrı çarpışma kontrolü yapıyoruz.
   const speed = Math.hypot(bullet.vx, bullet.vy);
   if (speed < 0.0001) return;
 
-  let remaining = speed;      // bu frame'de kat edilecek toplam mesafe
-  const maxStep = 4;          // duvarların en incesinden (14px) küçük adım
+  let remaining = speed;
+  const maxStep = 4;
 
   while (remaining > 0.0001) {
     const stepDist = Math.min(maxStep, remaining);
 
-    // Yön vektörü, hız değişse bile (sekme sonrası) her adımda
-    // güncel vx/vy üzerinden yeniden hesaplanır.
     const currentSpeed = Math.hypot(bullet.vx, bullet.vy);
     const ux = bullet.vx / currentSpeed;
     const uy = bullet.vy / currentSpeed;
@@ -729,39 +1105,61 @@ function updateBullet() {
     bullet.y += uy * stepDist;
     remaining -= stepDist;
 
-    // --- Ekran kenarlarından sekme ---
-    if (bullet.x - bullet.radius < 0) { bullet.x = bullet.radius; bullet.vx *= -1; }
-    else if (bullet.x + bullet.radius > canvas.width) { bullet.x = canvas.width - bullet.radius; bullet.vx *= -1; }
+    let bounced = false;
+    if (bullet.x - bullet.radius < 0) { bullet.x = bullet.radius; bullet.vx *= -1; bounced = true; }
+    else if (bullet.x + bullet.radius > canvas.width) { bullet.x = canvas.width - bullet.radius; bullet.vx *= -1; bounced = true; }
 
-    if (bullet.y - bullet.radius < 0) { bullet.y = bullet.radius; bullet.vy *= -1; }
+    if (bullet.y - bullet.radius < 0) { bullet.y = bullet.radius; bullet.vy *= -1; bounced = true; }
     else if (bullet.y + bullet.radius > canvas.height) {
       bullet = null; bulletTrail = [];
       checkLoseCondition();
       return;
     }
 
-    // --- Statik duvarlardan (dikdörtgen engeller) sekme ---
+    if (bounced) onBounce(bullet.x, bullet.y);
+
     for (const wallRect of walls) {
       if (circleRectCollision(bullet, wallRect)) {
         resolveCircleRectBounce(bullet, wallRect);
-        break; // aynı adımda birden fazla duvara çarpma kontrolünü engelle
+        onBounce(bullet.x, bullet.y);
+        break;
       }
     }
 
-    // --- Hedeflere çarpma kontrolü (her alt-adımda kontrol edilir,
-    //     böylece küçük hedefler de atlanmadan yakalanır) ---
     for (const t of targets) {
       if (!t.alive) continue;
       const dist = Math.hypot(bullet.x - t.x, bullet.y - t.y);
       if (dist < bullet.radius + t.radius) {
         t.alive = false;
-        spawnParticles(t.x, t.y, '#F2A0A0');
+        spawnParticles(t.x, t.y, '#F2A0A0', 16);
+        triggerShake(6, 8);
+        triggerFlash(0.12);
+        SFX.hit();
+        vibrate(30);
         updateUI();
       }
     }
   }
 
   checkWinCondition();
+}
+
+function onBounce(x, y) {
+  bounceCount++;
+  spawnSparks(x, y, 0, -1, '#9FD3DE');
+  const speed = bullet ? Math.hypot(bullet.vx, bullet.vy) : 5;
+  SFX.bounce(speed / 12);
+  vibrate(8);
+  triggerShake(2.5, 3);
+  if (bounceCount === 3 || bounceCount === 6) showCombo(bounceCount);
+}
+
+let comboTimer = null;
+function showCombo(n) {
+  comboText.textContent = n + 'X SEKME';
+  comboText.classList.add('show');
+  if (comboTimer) clearTimeout(comboTimer);
+  comboTimer = setTimeout(() => comboText.classList.remove('show'), 900);
 }
 
 function circleRectCollision(circle, rect) {
@@ -772,10 +1170,6 @@ function circleRectCollision(circle, rect) {
 }
 function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
-// Çarpışma yüzeyinin GERÇEK normal vektörünü kullanarak mermiyi yansıtır.
-// Eksen bazlı (sadece yatay/dikey) yansıtma köşelerde mermiyi duvarın
-// içine hapsedip "hortum gibi dönme" (sürekli sekme) hatasına yol
-// açıyordu. Normal-vektör yansıması bu sorunu ortadan kaldırır.
 function resolveCircleRectBounce(circle, rect) {
   const closestX = clamp(circle.x, rect.x, rect.x + rect.w);
   const closestY = clamp(circle.y, rect.y, rect.y + rect.h);
@@ -785,9 +1179,6 @@ function resolveCircleRectBounce(circle, rect) {
   let dist = Math.hypot(dx, dy);
 
   if (dist < 0.0001) {
-    // Merminin merkezi tam olarak dikdörtgenin içinde kalmış
-    // (nadir ama mümkün bir durum). En yakın kenarı bulup oradan
-    // dışarı itip normali o kenara göre belirliyoruz.
     const penLeft = circle.x - rect.x;
     const penRight = (rect.x + rect.w) - circle.x;
     const penTop = circle.y - rect.y;
@@ -800,7 +1191,6 @@ function resolveCircleRectBounce(circle, rect) {
     else { dx = 0; dy = 1; circle.y = rect.y + rect.h + circle.radius; }
     dist = 1;
   } else {
-    // Mermiyi, yüzeye tam değecek şekilde normal yönünde dışarı it
     const overlap = circle.radius - dist;
     if (overlap > 0) {
       const nx = dx / dist, ny = dy / dist;
@@ -809,7 +1199,6 @@ function resolveCircleRectBounce(circle, rect) {
     }
   }
 
-  // Yansıma formülü: v' = v - 2*(v·n)*n
   const nx = dx / dist, ny = dy / dist;
   const dot = bullet_vx_dot(circle, nx, ny);
   circle.vx -= 2 * dot * nx;
@@ -826,7 +1215,7 @@ function bullet_vx_dot(circle, nx, ny) {
 function calculateAimTrajectory(startX, startY, dirX, dirY) {
   const points = [{ x: startX, y: startY }];
   let x = startX, y = startY;
-  const stepSize = 6, maxSteps = 200; // performans için adım sayısı azaltıldı
+  const stepSize = 6, maxSteps = 200;
 
   for (let i = 0; i < maxSteps; i++) {
     x += dirX * stepSize; y += dirY * stepSize;
@@ -850,22 +1239,42 @@ function checkWinCondition() {
   if (remaining === 0 && currentState === GAME_STATE.FIRING) {
     currentState = GAME_STATE.WIN;
     bullet = null; bulletTrail = [];
-    showResult(true);
+    const stars = computeStars();
+    saveStars(currentLevelIndex, stars);
+    SFX.win();
+    vibrate([0, 40, 60, 40, 60, 80]);
+    showResult(true, stars);
   }
 }
 function checkLoseCondition() {
   const remaining = targets.filter(t => t.alive).length;
   if (remaining > 0 && bulletsLeft <= 0) {
     currentState = GAME_STATE.LOSE;
+    SFX.lose();
+    vibrate(150);
     showResult(false);
   } else {
     currentState = GAME_STATE.AIMING;
   }
 }
 
-// Kazanma/kaybetme durumuna göre sonuç ekranını ve buton
-// davranışlarını dinamik olarak ayarlar (sıradaki bölüm / tekrar dene).
-function showResult(didWin) {
+function computeStars() {
+  if (bounceCount <= 1) return 3;
+  if (bounceCount <= 3) return 2;
+  return 1;
+}
+function saveStars(levelIndex, stars) {
+  const key = String(levelIndex);
+  const prev = progress.stars[key] || 0;
+  if (stars > prev) progress.stars[key] = stars;
+  if (progress.unlocked <= levelIndex + 1 && levelIndex + 1 < LEVELS.length) {
+    progress.unlocked = levelIndex + 2;
+  }
+  saveProgress();
+  updateTotalStarsBadge();
+}
+
+function showResult(didWin, stars) {
   const isLastLevel = currentLevelIndex === LEVELS.length - 1;
 
   if (didWin) {
@@ -878,10 +1287,17 @@ function showResult(didWin) {
       restartBtn.textContent = 'Sonraki Bölüm';
       restartBtn.onclick = () => loadLevel(currentLevelIndex + 1);
     }
+    starsRow.style.display = 'flex';
+    const starEls = starsRow.querySelectorAll('span');
+    starEls.forEach(s => s.classList.remove('lit'));
+    for (let i = 0; i < stars; i++) {
+      setTimeout(() => { starEls[i].classList.add('lit'); SFX.star(i); }, 250 + i * 150);
+    }
   } else {
     messageEl.textContent = '✕ BAŞARISIZ';
     restartBtn.textContent = 'Tekrar Dene';
     restartBtn.onclick = () => loadLevel(currentLevelIndex);
+    starsRow.style.display = 'none';
   }
 
   messageEl.style.display = 'block';
@@ -893,6 +1309,7 @@ function hideMessage() {
   messageEl.style.display = 'none';
   restartBtn.style.display = 'none';
   menuResultBtn.style.display = 'none';
+  starsRow.style.display = 'none';
 }
 
 function goToMainMenu() {
@@ -902,28 +1319,40 @@ function goToMainMenu() {
   isAiming = false;
   hideMessage();
   howToPanel.style.display = 'none';
+  levelSelectPanel.style.display = 'none';
   currentState = GAME_STATE.MENU;
   mainMenu.style.display = 'flex';
+  updateTotalStarsBadge();
 }
 
 // =========================================================
 //  UI
 // =========================================================
+function pulseBadge(el) {
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
 function updateUI() {
   bulletText.textContent = bulletsLeft;
   const remaining = targets.filter(t => t.alive).length;
   targetText.textContent = remaining;
   titleEl.textContent = 'BÖLÜM ' + (currentLevelIndex + 1) + ' / ' + LEVELS.length;
+  pulseBadge(bulletInfo); pulseBadge(targetInfo);
 }
 
 // =========================================================
-//  ÇİZİM (her frame sadece dinamik öğeler)
+//  ÇİZİM
 // =========================================================
 function drawTargets() {
   for (const t of targets) {
     if (!t.alive) continue;
     t.pulse += 0.05;
     const pulseScale = 1 + Math.sin(t.pulse) * 0.05;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(242,160,160,0.5)';
+    ctx.shadowBlur = 10;
 
     const grad = ctx.createRadialGradient(
       t.x - t.radius * 0.3, t.y - t.radius * 0.3, 1,
@@ -937,6 +1366,7 @@ function drawTargets() {
     ctx.arc(t.x, t.y, t.radius * pulseScale, 0, Math.PI * 2);
     ctx.fillStyle = grad;
     ctx.fill();
+    ctx.restore();
 
     ctx.beginPath();
     ctx.arc(t.x, t.y, t.radius * pulseScale, 0, Math.PI * 2);
@@ -952,10 +1382,17 @@ function drawTargets() {
 }
 
 function drawLauncher() {
+  if (launcher.recoil > 0) launcher.recoil -= 1;
+  const recoilOffset = launcher.recoil * 0.4;
+
   ctx.save();
   ctx.translate(launcher.x, launcher.y);
   ctx.rotate(launcher.angle + Math.PI / 2);
+  ctx.translate(0, recoilOffset);
 
+  ctx.save();
+  ctx.shadowColor = 'rgba(159,211,222,0.5)';
+  ctx.shadowBlur = 14;
   const grad = ctx.createRadialGradient(0, -launcher.radius * 0.3, 1, 0, 0, launcher.radius);
   grad.addColorStop(0, '#D8ECEF');
   grad.addColorStop(0.6, '#9FD3DE');
@@ -965,6 +1402,7 @@ function drawLauncher() {
   ctx.arc(0, 0, launcher.radius, 0, Math.PI * 2);
   ctx.fillStyle = grad;
   ctx.fill();
+  ctx.restore();
 
   ctx.fillStyle = '#eef6f8';
   ctx.beginPath();
@@ -980,20 +1418,24 @@ function drawLauncher() {
 function drawBulletTrail() {
   for (let i = 0; i < bulletTrail.length; i++) {
     const p = bulletTrail[i];
-    const alpha = (i / bulletTrail.length) * 0.45;
+    const alpha = (i / bulletTrail.length) * 0.5;
     const r = BULLET_RADIUS * (i / bulletTrail.length);
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillStyle = `rgba(159,211,222,${alpha})`;
     ctx.fill();
   }
 }
 
 function drawBullet() {
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,255,255,0.8)';
+  ctx.shadowBlur = 10;
   ctx.beginPath();
   ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
+  ctx.restore();
 }
 
 function drawAimGuide() {
@@ -1003,8 +1445,9 @@ function drawAimGuide() {
 
   const dirX = dx / dist, dirY = dy / dist;
   const trajectory = calculateAimTrajectory(launcher.x, launcher.y, dirX, dirY);
+  const power = Math.min(dist, MAX_DRAG_DISTANCE) / MAX_DRAG_DISTANCE;
 
-  ctx.strokeStyle = 'rgba(180, 210, 220, 0.5)';
+  ctx.strokeStyle = `rgba(180, 210, 220, ${0.4 + power * 0.3})`;
   ctx.lineWidth = 2;
   ctx.setLineDash([9, 9]);
   ctx.lineDashOffset = -frameCount * 0.6;
@@ -1015,13 +1458,17 @@ function drawAimGuide() {
   ctx.setLineDash([]);
 
   const hitPoint = trajectory[trajectory.length - 1];
+  ctx.save();
+  ctx.shadowColor = 'rgba(210,230,235,0.8)';
+  ctx.shadowBlur = 8;
   ctx.beginPath();
   ctx.arc(hitPoint.x, hitPoint.y, 5, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(210, 230, 235, 0.85)';
   ctx.fill();
+  ctx.restore();
 
-  const power = Math.min(dist, MAX_DRAG_DISTANCE) / MAX_DRAG_DISTANCE;
-  ctx.strokeStyle = `rgba(159, 211, 222, ${0.45 + power * 0.35})`;
+  const powerColor = power > 0.75 ? '242,160,160' : '159, 211, 222';
+  ctx.strokeStyle = `rgba(${powerColor}, ${0.45 + power * 0.35})`;
   ctx.lineWidth = 2 + power * 3;
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -1038,7 +1485,6 @@ function drawAimGuide() {
 function draw() {
   frameCount++;
 
-  // Statik katman tek bir drawImage ile kopyalanır (ucuz işlem)
   ctx.drawImage(staticLayer, 0, 0);
 
   drawTargets();
@@ -1047,6 +1493,9 @@ function draw() {
 
   if (isAiming) drawAimGuide();
   if (bullet) { drawBulletTrail(); drawBullet(); }
+
+  drawFlash();
+  updateShake();
 }
 
 // =========================================================
@@ -1073,48 +1522,75 @@ function loadLevel(index) {
     ...t, alive: true, pulse: i * (Math.PI * 0.6)
   }));
 
-  buildStaticLayer(); // duvarları ve arka planı yeniden "pişir"
+  buildStaticLayer();
 
   bullet = null;
   bulletTrail = [];
   particles = [];
   bulletsLeft = 1;
+  bounceCount = 0;
   currentState = GAME_STATE.AIMING;
   hideMessage();
   updateUI();
+  levelSelectPanel.style.display = 'none';
+  mainMenu.style.display = 'none';
 }
 
-// Ekran boyutu değiştiğinde (döndürme vb.) statik katmanı yeniden oluştur
 window.addEventListener('resize', () => {
   resizeCanvas();
   updateLauncherPosition();
   if (walls.length > 0) buildStaticLayer();
 });
 
+// =========================================================
+//  BÖLÜM SEÇİM EKRANI
+// =========================================================
+function buildLevelGrid() {
+  levelGrid.innerHTML = '';
+  for (let i = 0; i < LEVELS.length; i++) {
+    const card = document.createElement('div');
+    const unlocked = i < progress.unlocked;
+    card.className = 'levelCard' + (unlocked ? '' : ' locked') + (i === currentLevelIndex ? ' current' : '');
+    if (unlocked) {
+      const stars = progress.stars[String(i)] || 0;
+      card.innerHTML = `<div class="num">${i + 1}</div><div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>`;
+      card.addEventListener('click', () => { SFX.ui(); loadLevel(i); });
+    } else {
+      card.innerHTML = `<div class="num">🔒</div>`;
+    }
+    levelGrid.appendChild(card);
+  }
+}
+
 // ---- Ana Menü Etkileşimleri ----
 playBtn.addEventListener('click', () => {
+  ensureAudio(); SFX.ui();
+  const startAt = Math.min(progress.unlocked - 1, LEVELS.length - 1);
   mainMenu.style.display = 'none';
-  loadLevel(0);
+  loadLevel(Math.max(startAt, 0));
 });
 
-howToBtn.addEventListener('click', () => {
-  howToPanel.style.display = 'flex';
+levelsBtn.addEventListener('click', () => {
+  ensureAudio(); SFX.ui();
+  buildLevelGrid();
+  levelSelectPanel.style.display = 'flex';
 });
+closeLevels.addEventListener('click', () => { SFX.ui(); levelSelectPanel.style.display = 'none'; });
 
-closeHowTo.addEventListener('click', () => {
-  howToPanel.style.display = 'none';
-});
+howToBtn.addEventListener('click', () => { ensureAudio(); SFX.ui(); howToPanel.style.display = 'flex'; });
+closeHowTo.addEventListener('click', () => { SFX.ui(); howToPanel.style.display = 'none'; });
 
-menuResultBtn.addEventListener('click', goToMainMenu);
-menuBackBtn.addEventListener('click', goToMainMenu);
+menuResultBtn.addEventListener('click', () => { SFX.ui(); goToMainMenu(); });
+menuBackBtn.addEventListener('click', () => { SFX.ui(); goToMainMenu(); });
 
 // Menüde beklerken de arka planın boş görünmemesi için ilk bölümü
-// sahne olarak hazırlıyoruz (menü ekranı üstte kalmaya devam ediyor).
+// sahne olarak hazırlıyoruz.
 updateLauncherPosition();
 walls = LEVELS[0].walls(canvas.width, canvas.height);
 targets = LEVELS[0].targets(canvas.width, canvas.height).map(t => ({ ...t, alive: true, pulse: 0 }));
 buildStaticLayer();
 updateUI();
+updateTotalStarsBadge();
 gameLoop();
 </script>
 </body>
