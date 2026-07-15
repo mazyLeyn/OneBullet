@@ -500,6 +500,7 @@
         <li>Kesikli lazer çizgisi, merminin ilk çarpacağı noktayı gösterir.</li>
         <li>Bıraktığında mermi fırlar ve duvarlardan/kenarlardan seker.</li>
         <li>Her bölümde sadece 1 mermi hakkın var — dikkatli nişan al.</li>
+        <li>Atış kötü gitti mi? Mermi havadayken fırlatıcıya dokun, geri çağır ve yeniden dene.</li>
         <li>Ekrandaki tüm kırmızı hedefleri yok ederek bölümü tamamla.</li>
         <li>Az sekme ile hızlı bitirirsen daha çok yıldız kazanırsın.</li>
         <li>12 bölümü sırayla geçerek oyunu tamamla.</li>
@@ -609,7 +610,8 @@ const SFX = {
   win: () => { [0,4,7,12].forEach((semi,i) => setTimeout(() => playTone(440 * Math.pow(2, semi/12), 0.3, 'sine', 0.14), i*90)); },
   lose: () => { playTone(220, 0.4, 'sawtooth', 0.15, { slideTo: 60 }); },
   ui: () => playTone(700, 0.05, 'sine', 0.08),
-  star: (i) => setTimeout(() => playTone(660 + i*140, 0.18, 'sine', 0.14), i*120)
+  star: (i) => setTimeout(() => playTone(660 + i*140, 0.18, 'sine', 0.14), i*120),
+  recall: () => { playTone(180, 0.22, 'sine', 0.16, { slideTo: 720 }); playNoise(0.1, 0.06); }
 };
 function vibrate(pattern) {
   if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch(e) {} }
@@ -663,177 +665,152 @@ function updateLauncherPosition() {
 //  BÖLÜM (LEVEL) TANIMLARI — 12 bölüm, artan zorluk
 // =========================================================
 const LEVELS = [
+  // Bölüm 1 - Açılış - düz atış
   {
     walls: (w, h) => [
-      { x: w * 0.15, y: h * 0.45, w: w * 0.45, h: 16 }
+      { x: w * 0.060, y: h * 0.050, w: w * 0.220, h: 14 },
+      { x: w * 0.060, y: h * 0.620, w: w * 0.200, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.25, y: h * 0.20, radius: 19 },
-      { x: w * 0.75, y: h * 0.25, radius: 19 },
-      { x: w * 0.50, y: h * 0.60, radius: 19 }
+      { x: w * 0.550, y: h * 0.670, radius: 23 },
+      { x: w * 0.618, y: h * 0.430, radius: 23 },
+      { x: w * 0.690, y: h * 0.170, radius: 23 }
     ]
   },
+  // Bölüm 2 - Tek sekme
   {
     walls: (w, h) => [
-      { x: w * 0.15, y: h * 0.45, w: w * 0.45, h: 16 },
-      { x: w * 0.72, y: h * 0.55, w: 16, h: h * 0.22 }
+      { x: w * 0.700, y: h * 0.060, w: w * 0.220, h: 14 },
+      { x: w * 0.060, y: h * 0.600, w: w * 0.200, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.25, y: h * 0.18, radius: 18 },
-      { x: w * 0.80, y: h * 0.30, radius: 18 },
-      { x: w * 0.50, y: h * 0.65, radius: 18 }
+      { x: w * 0.583, y: h * 0.700, radius: 22 },
+      { x: w * 0.720, y: h * 0.450, radius: 22 },
+      { x: w * 0.863, y: h * 0.190, radius: 22 }
     ]
   },
+  // Bölüm 3 - Tek sekme (ters)
   {
     walls: (w, h) => [
-      { x: w * 0.15, y: h * 0.45, w: w * 0.45, h: 16 },
-      { x: w * 0.72, y: h * 0.55, w: 16, h: h * 0.22 },
-      { x: w * 0.10, y: h * 0.22, w: w * 0.28, h: 14 }
+      { x: w * 0.060, y: h * 0.060, w: w * 0.200, h: 14 },
+      { x: w * 0.700, y: h * 0.600, w: w * 0.200, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.25, y: h * 0.18, radius: 18 },
-      { x: w * 0.80, y: h * 0.30, radius: 18 },
-      { x: w * 0.50, y: h * 0.65, radius: 18 }
+      { x: w * 0.417, y: h * 0.700, radius: 22 },
+      { x: w * 0.280, y: h * 0.450, radius: 22 },
+      { x: w * 0.137, y: h * 0.190, radius: 22 }
     ]
   },
+  // Bölüm 4 - İki sekme
   {
     walls: (w, h) => [
-      { x: 0, y: h * 0.40, w: w * 0.62, h: 14 },
-      { x: w * 0.55, y: h * 0.55, w: w * 0.45, h: 14 },
-      { x: w * 0.30, y: h * 0.70, w: 14, h: h * 0.18 }
+      { x: w * 0.060, y: h * 0.580, w: w * 0.180, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.20, y: h * 0.20, radius: 17 },
-      { x: w * 0.82, y: h * 0.20, radius: 17 },
-      { x: w * 0.70, y: h * 0.68, radius: 17 }
+      { x: w * 0.605, y: h * 0.710, radius: 21 },
+      { x: w * 0.785, y: h * 0.470, radius: 21 },
+      { x: w * 0.900, y: h * 0.050, radius: 21 }
     ]
   },
+  // Bölüm 5 - İki sekme (ters)
   {
     walls: (w, h) => [
-      { x: w * 0.05, y: h * 0.28, w: w * 0.35, h: 14 },
-      { x: w * 0.60, y: h * 0.28, w: w * 0.35, h: 14 },
-      { x: w * 0.15, y: h * 0.50, w: 14, h: h * 0.16 },
-      { x: w * 0.71, y: h * 0.50, w: 14, h: h * 0.16 }
+      { x: w * 0.720, y: h * 0.580, w: w * 0.180, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.50, y: h * 0.14, radius: 17 },
-      { x: w * 0.50, y: h * 0.42, radius: 17 },
-      { x: w * 0.50, y: h * 0.70, radius: 17 }
+      { x: w * 0.395, y: h * 0.710, radius: 21 },
+      { x: w * 0.215, y: h * 0.470, radius: 21 },
+      { x: w * 0.100, y: h * 0.050, radius: 21 }
     ]
   },
+  // Bölüm 6 - Zigzag
   {
     walls: (w, h) => [
-      { x: w * 0.10, y: h * 0.22, w: w * 0.30, h: 14 },
-      { x: w * 0.60, y: h * 0.22, w: w * 0.30, h: 14 },
-      { x: w * 0.42, y: h * 0.36, w: 16, h: h * 0.14 },
-      { x: w * 0.15, y: h * 0.54, w: w * 0.25, h: 14 },
-      { x: w * 0.60, y: h * 0.54, w: w * 0.25, h: 14 }
+      { x: w * 0.720, y: h * 0.060, w: w * 0.200, h: 14 },
+      { x: w * 0.060, y: h * 0.600, w: w * 0.180, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.18, y: h * 0.13, radius: 16 },
-      { x: w * 0.82, y: h * 0.13, radius: 16 },
-      { x: w * 0.50, y: h * 0.68, radius: 16 }
+      { x: w * 0.637, y: h * 0.720, radius: 20 },
+      { x: w * 0.878, y: h * 0.490, radius: 20 },
+      { x: w * 0.849, y: h * 0.230, radius: 20 }
     ]
   },
-  // Bölüm 7 - Simetrik huni
+  // Bölüm 7 - Zigzag (ters)
   {
     walls: (w, h) => [
-      { x: 0, y: h * 0.28, w: w * 0.38, h: 14 },
-      { x: w * 0.62, y: h * 0.28, w: w * 0.38, h: 14 },
-      { x: w * 0.38, y: h * 0.28, w: 14, h: h * 0.14 },
-      { x: w * 0.30, y: h * 0.52, w: w * 0.40, h: 14 }
+      { x: w * 0.060, y: h * 0.050, w: w * 0.180, h: 14 },
+      { x: w * 0.700, y: h * 0.600, w: w * 0.200, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.15, y: h * 0.13, radius: 16 },
-      { x: w * 0.85, y: h * 0.13, radius: 16 },
-      { x: w * 0.50, y: h * 0.68, radius: 16 },
-      { x: w * 0.50, y: h * 0.40, radius: 14 }
+      { x: w * 0.395, y: h * 0.750, radius: 20 },
+      { x: w * 0.206, y: h * 0.570, radius: 20 },
+      { x: w * 0.101, y: h * 0.278, radius: 20 },
+      { x: w * 0.214, y: h * 0.170, radius: 20 }
     ]
   },
-  // Bölüm 8 - Dar zigzag koridor
+  // Bölüm 8 - Sık sekme
   {
     walls: (w, h) => [
-      { x: 0, y: h * 0.22, w: w * 0.70, h: 14 },
-      { x: w * 0.30, y: h * 0.40, w: w * 0.70, h: 14 },
-      { x: 0, y: h * 0.58, w: w * 0.70, h: 14 }
+      { x: w * 0.700, y: h * 0.050, w: w * 0.200, h: 14 },
+      { x: w * 0.060, y: h * 0.600, w: w * 0.180, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.85, y: h * 0.12, radius: 15 },
-      { x: w * 0.15, y: h * 0.31, radius: 15 },
-      { x: w * 0.85, y: h * 0.49, radius: 15 },
-      { x: w * 0.15, y: h * 0.68, radius: 15 }
+      { x: w * 0.635, y: h * 0.750, radius: 19 },
+      { x: w * 0.878, y: h * 0.570, radius: 19 },
+      { x: w * 0.852, y: h * 0.370, radius: 19 },
+      { x: w * 0.582, y: h * 0.170, radius: 19 }
     ]
   },
-  // Bölüm 9 - Merkez kule
+  // Bölüm 9 - Sık sekme (ters)
   {
     walls: (w, h) => [
-      { x: w * 0.44, y: h * 0.26, w: 16, h: h * 0.34 },
-      { x: w * 0.10, y: h * 0.18, w: w * 0.25, h: 14 },
-      { x: w * 0.65, y: h * 0.18, w: w * 0.25, h: 14 },
-      { x: w * 0.10, y: h * 0.58, w: w * 0.25, h: 14 },
-      { x: w * 0.65, y: h * 0.58, w: w * 0.25, h: 14 }
+      { x: w * 0.060, y: h * 0.050, w: w * 0.180, h: 14 },
+      { x: w * 0.700, y: h * 0.600, w: w * 0.200, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.18, y: h * 0.11, radius: 15 },
-      { x: w * 0.82, y: h * 0.11, radius: 15 },
-      { x: w * 0.18, y: h * 0.71, radius: 15 },
-      { x: w * 0.82, y: h * 0.71, radius: 15 }
+      { x: w * 0.379, y: h * 0.760, radius: 19 },
+      { x: w * 0.149, y: h * 0.590, radius: 19 },
+      { x: w * 0.107, y: h * 0.400, radius: 19 },
+      { x: w * 0.377, y: h * 0.200, radius: 19 }
     ]
   },
-  // Bölüm 10 - Elmas geçit
+  // Bölüm 10 - Uzun sekme
   {
     walls: (w, h) => [
-      { x: w * 0.20, y: h * 0.18, w: w * 0.20, h: 14 },
-      { x: w * 0.60, y: h * 0.18, w: w * 0.20, h: 14 },
-      { x: w * 0.08, y: h * 0.40, w: 14, h: h * 0.14 },
-      { x: w * 0.78, y: h * 0.40, w: 14, h: h * 0.14 },
-      { x: w * 0.20, y: h * 0.60, w: w * 0.20, h: 14 },
-      { x: w * 0.60, y: h * 0.60, w: w * 0.20, h: 14 }
+      { x: w * 0.700, y: h * 0.060, w: w * 0.200, h: 14 },
+      { x: w * 0.060, y: h * 0.580, w: w * 0.180, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.50, y: h * 0.10, radius: 15 },
-      { x: w * 0.50, y: h * 0.42, radius: 15 },
-      { x: w * 0.50, y: h * 0.72, radius: 15 }
+      { x: w * 0.747, y: h * 0.700, radius: 19 },
+      { x: w * 0.840, y: h * 0.450, radius: 19 },
+      { x: w * 0.411, y: h * 0.190, radius: 19 }
     ]
   },
-  // Bölüm 11 - Sıkışık labirent
+  // Bölüm 11 - Yoğun sekme
   {
     walls: (w, h) => [
-      { x: 0, y: h * 0.18, w: w * 0.55, h: 14 },
-      { x: w * 0.75, y: h * 0.18, w: w * 0.25, h: 14 },
-      { x: w * 0.20, y: h * 0.34, w: w * 0.60, h: 14 },
-      { x: 0, y: h * 0.50, w: w * 0.55, h: 14 },
-      { x: w * 0.75, y: h * 0.50, w: w * 0.25, h: 14 },
-      { x: w * 0.20, y: h * 0.66, w: w * 0.60, h: 14 }
+      { x: w * 0.060, y: h * 0.050, w: w * 0.180, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.87, y: h * 0.10, radius: 14 },
-      { x: w * 0.10, y: h * 0.42, radius: 14 },
-      { x: w * 0.87, y: h * 0.58, radius: 14 },
-      { x: w * 0.50, y: h * 0.74, radius: 14 }
+      { x: w * 0.671, y: h * 0.760, radius: 18 },
+      { x: w * 0.900, y: h * 0.534, radius: 18 },
+      { x: w * 0.645, y: h * 0.400, radius: 18 },
+      { x: w * 0.265, y: h * 0.200, radius: 18 }
     ]
   },
-  // Bölüm 12 - Final: en yoğun düzen
+  // Bölüm 12 - Final - en yoğun sekme
   {
     walls: (w, h) => [
-      { x: w * 0.08, y: h * 0.15, w: w * 0.24, h: 14 },
-      { x: w * 0.68, y: h * 0.15, w: w * 0.24, h: 14 },
-      { x: w * 0.38, y: h * 0.25, w: 14, h: h * 0.12 },
-      { x: w * 0.15, y: h * 0.35, w: w * 0.22, h: 14 },
-      { x: w * 0.63, y: h * 0.35, w: w * 0.22, h: 14 },
-      { x: w * 0.44, y: h * 0.42, w: 14, h: h * 0.12 },
-      { x: w * 0.10, y: h * 0.56, w: w * 0.30, h: 14 },
-      { x: w * 0.60, y: h * 0.56, w: w * 0.30, h: 14 }
+      { x: w * 0.700, y: h * 0.050, w: w * 0.200, h: 14 }
     ],
     targets: (w, h) => [
-      { x: w * 0.20, y: h * 0.09, radius: 14 },
-      { x: w * 0.80, y: h * 0.09, radius: 14 },
-      { x: w * 0.50, y: h * 0.49, radius: 14 },
-      { x: w * 0.50, y: h * 0.72, radius: 14 }
+      { x: w * 0.328, y: h * 0.770, radius: 18 },
+      { x: w * 0.102, y: h * 0.570, radius: 18 },
+      { x: w * 0.403, y: h * 0.430, radius: 18 },
+      { x: w * 0.833, y: h * 0.230, radius: 18 }
     ]
   }
 ];
-
 let currentLevelIndex = 0;
 let walls = [];
 let targets = [];
@@ -1003,6 +980,62 @@ let aimStart = { x: 0, y: 0 };
 let aimCurrent = { x: 0, y: 0 };
 let frameCount = 0;
 
+// ---- Mermi geri çağırma (recall) ----
+// Atış kötü gittiğinde veya mermi bir köşede takılı kaldığında,
+// oyuncu fırlatıcıya dokunarak mermiyi geri çağırıp yeniden nişan alabilir.
+let isRecalling = false;
+let recallFrom = { x: 0, y: 0 };
+let recallProgress = 0;
+const RECALL_SPEED = 0.075;
+// Mermi az önce fırlatıldıysa anında geri çağırmayı engellemek için
+// minimum "uçuş süresi" (frame) şartı koyuyoruz.
+let flightFrames = 0;
+const MIN_FLIGHT_FRAMES_FOR_RECALL = 10;
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function canRecall() {
+  return currentState === GAME_STATE.FIRING && bullet && !isRecalling && flightFrames >= MIN_FLIGHT_FRAMES_FOR_RECALL;
+}
+
+function startRecall() {
+  if (!bullet) return;
+  isRecalling = true;
+  recallFrom = { x: bullet.x, y: bullet.y };
+  recallProgress = 0;
+  bulletTrail = [];
+  SFX.recall();
+  vibrate([0, 15, 30, 15]);
+  showCombo('◀ GERİ ÇAĞRILDI');
+}
+
+function updateRecall() {
+  recallProgress += RECALL_SPEED;
+  if (recallProgress >= 1) {
+    isRecalling = false;
+    loadLevel(currentLevelIndex);
+    return;
+  }
+  const t = easeOutCubic(recallProgress);
+  bullet.x = lerp(recallFrom.x, launcher.x, t);
+  bullet.y = lerp(recallFrom.y, launcher.y, t);
+  bullet.radius = BULLET_RADIUS * (1 - recallProgress * 0.4);
+
+  bulletTrail.push({ x: bullet.x, y: bullet.y });
+  if (bulletTrail.length > 14) bulletTrail.shift();
+
+  if (frameCount % 3 === 0) {
+    const angle = Math.random() * Math.PI * 2;
+    const spawnR = 18 + Math.random() * 10;
+    spawnParticles(
+      bullet.x + Math.cos(angle) * spawnR,
+      bullet.y + Math.sin(angle) * spawnR,
+      '#9FD3DE', 1
+    );
+  }
+}
+
 // =========================================================
 //  INPUT
 // =========================================================
@@ -1023,8 +1056,18 @@ function getPointerPos(evt) {
 function handlePointerDown(evt) {
   evt.preventDefault();
   ensureAudio();
-  if (currentState !== GAME_STATE.AIMING || bulletsLeft <= 0) return;
   const pos = getPointerPos(evt);
+
+  // Fırlatıcıya dokunulduysa ve mermi havadaysa: geri çağır
+  if (canRecall()) {
+    const distToLauncher = Math.hypot(pos.x - launcher.x, pos.y - launcher.y);
+    if (distToLauncher < launcher.radius * 2.4) {
+      startRecall();
+      return;
+    }
+  }
+
+  if (currentState !== GAME_STATE.AIMING || bulletsLeft <= 0) return;
   isAiming = true;
   aimStart = { x: launcher.x, y: launcher.y };
   aimCurrent = pos;
@@ -1076,6 +1119,8 @@ function fireBullet() {
   bulletTrail = [];
   bulletsLeft--;
   bounceCount = 0;
+  flightFrames = 0;
+  isRecalling = false;
   updateUI();
   currentState = GAME_STATE.FIRING;
   launcher.recoil = 10;
@@ -1089,6 +1134,7 @@ function fireBullet() {
 // =========================================================
 function updateBullet() {
   if (!bullet) return;
+  flightFrames++;
 
   bulletTrail.push({ x: bullet.x, y: bullet.y });
   if (bulletTrail.length > 12) bulletTrail.shift();
@@ -1160,8 +1206,8 @@ function onBounce(x, y) {
 }
 
 let comboTimer = null;
-function showCombo(n) {
-  comboText.textContent = n + 'X SEKME';
+function showCombo(msg) {
+  comboText.textContent = typeof msg === 'number' ? (msg + 'X SEKME') : msg;
   comboText.classList.add('show');
   if (comboTimer) clearTimeout(comboTimer);
   comboTimer = setTimeout(() => comboText.classList.remove('show'), 900);
@@ -1490,6 +1536,19 @@ function drawAimGuide() {
   ctx.fill();
 }
 
+function drawRecallHint() {
+  const pulse = 0.5 + Math.sin(frameCount * 0.12) * 0.5;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(launcher.x, launcher.y, launcher.radius * (1.5 + pulse * 0.4), 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(159,211,222,${0.25 + pulse * 0.25})`;
+  ctx.setLineDash([5, 6]);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 function draw() {
   frameCount++;
 
@@ -1497,6 +1556,7 @@ function draw() {
 
   drawTargets();
   drawParticles();
+  if (canRecall()) drawRecallHint();
   drawLauncher();
 
   if (isAiming) drawAimGuide();
@@ -1510,7 +1570,8 @@ function draw() {
 //  GAME LOOP
 // =========================================================
 function gameLoop() {
-  if (currentState === GAME_STATE.FIRING) updateBullet();
+  if (isRecalling) updateRecall();
+  else if (currentState === GAME_STATE.FIRING) updateBullet();
   if (particles.length > 0) updateParticles();
   draw();
   requestAnimationFrame(gameLoop);
@@ -1537,6 +1598,8 @@ function loadLevel(index) {
   particles = [];
   bulletsLeft = 1;
   bounceCount = 0;
+  isRecalling = false;
+  flightFrames = 0;
   currentState = GAME_STATE.AIMING;
   hideMessage();
   updateUI();
