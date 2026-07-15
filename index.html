@@ -38,7 +38,7 @@
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.06),
       0 20px 60px rgba(0,0,0,0.8),
-      0 0 80px rgba(76,201,240,0.06);
+      0 0 80px rgba(159,211,222,0.05);
   }
 
   canvas {
@@ -49,9 +49,9 @@
 
   #ui {
     position: absolute;
-    top: 0; left: 0;
+    top: 58px; left: 0;
     width: 100%;
-    padding: 16px 18px;
+    padding: 0 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -79,12 +79,40 @@
     border-radius: 50%;
   }
 
-  #bulletInfo .dot { background: #4cc9f0; box-shadow: 0 0 8px #4cc9f0; }
-  #targetInfo .dot { background: #ff4d5e; box-shadow: 0 0 8px #ff4d5e; }
+  #bulletInfo .dot { background: #9FD3DE; box-shadow: 0 0 8px #9FD3DE; }
+  #targetInfo .dot { background: #F2A0A0; box-shadow: 0 0 8px #F2A0A0; }
+
+  #menuBackBtn {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    z-index: 7;
+  }
+  #menuBackBtn:active { transform: translateX(-50%) scale(0.92); }
+  #menuBackBtn span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.75);
+  }
 
   #title {
     position: absolute;
-    top: 16px;
+    top: 58px;
     left: 50%;
     transform: translateX(-50%);
     color: rgba(255,255,255,0.18);
@@ -118,7 +146,7 @@
     left: 50%;
     transform: translateX(-50%);
     padding: 12px 28px;
-    background: linear-gradient(135deg, #4cc9f0, #4361ee);
+    background: linear-gradient(135deg, #9FD3DE, #7FA6C9);
     color: #fff;
     border: none;
     border-radius: 999px;
@@ -132,6 +160,24 @@
   }
   #restartBtn:active { transform: translateX(-50%) scale(0.96); }
 
+  #menuResultBtn {
+    position: absolute;
+    top: 63.5%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 9px 22px;
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: none;
+    z-index: 6;
+  }
+  #menuResultBtn:active { transform: translateX(-50%) scale(0.96); }
+
   /* ================= ANA MENÜ ================= */
   #mainMenu {
     position: absolute;
@@ -143,7 +189,7 @@
     justify-content: center;
     gap: 8px;
     background:
-      radial-gradient(circle at 50% 30%, rgba(76,201,240,0.12), transparent 60%),
+      radial-gradient(circle at 50% 30%, rgba(159,211,222,0.10), transparent 60%),
       linear-gradient(180deg, #14151f 0%, #0a0b10 100%);
     z-index: 10;
     text-align: center;
@@ -160,7 +206,7 @@
   }
   @keyframes menuPulse {
     0%, 100% { transform: scale(1); box-shadow: 0 0 20px 6px rgba(255,255,255,0.5); }
-    50% { transform: scale(1.3); box-shadow: 0 0 28px 10px rgba(76,201,240,0.6); }
+    50% { transform: scale(1.3); box-shadow: 0 0 28px 10px rgba(159,211,222,0.4); }
   }
 
   #menuTitle {
@@ -170,7 +216,7 @@
     letter-spacing: 3px;
     line-height: 1.1;
   }
-  #menuTitle span { color: #4cc9f0; }
+  #menuTitle span { color: #9FD3DE; }
 
   #menuSubtitle {
     color: rgba(255,255,255,0.45);
@@ -195,7 +241,7 @@
   .menuBtn:active { transform: scale(0.96); }
 
   #playBtn {
-    background: linear-gradient(135deg, #4cc9f0, #4361ee);
+    background: linear-gradient(135deg, #9FD3DE, #7FA6C9);
     color: #fff;
     box-shadow: 0 10px 26px rgba(67, 97, 238, 0.45);
   }
@@ -253,11 +299,11 @@
     left: 0; top: 6px;
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: #4cc9f0;
+    background: #9FD3DE;
   }
   #closeHowTo {
     margin-top: 30px;
-    background: linear-gradient(135deg, #4cc9f0, #4361ee);
+    background: linear-gradient(135deg, #9FD3DE, #7FA6C9);
     color: #fff;
     border: none;
     border-radius: 999px;
@@ -275,6 +321,7 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="title">ONE • BULLET</div>
+    <button id="menuBackBtn" title="Ana Menü"><span></span><span></span><span></span></button>
 
     <div id="ui">
       <div class="badge" id="bulletInfo"><span class="dot"></span><span id="bulletText">1</span></div>
@@ -283,6 +330,7 @@
 
     <div id="message"></div>
     <button id="restartBtn">Tekrar Oyna</button>
+    <button id="menuResultBtn">Ana Menü</button>
 
     <!-- ================= ANA MENÜ ================= -->
     <div id="mainMenu">
@@ -323,6 +371,8 @@ const bulletText = document.getElementById('bulletText');
 const targetText = document.getElementById('targetText');
 const messageEl = document.getElementById('message');
 const restartBtn = document.getElementById('restartBtn');
+const menuResultBtn = document.getElementById('menuResultBtn');
+const menuBackBtn = document.getElementById('menuBackBtn');
 const mainMenu = document.getElementById('mainMenu');
 const playBtn = document.getElementById('playBtn');
 const howToBtn = document.getElementById('howToBtn');
@@ -411,7 +461,7 @@ function drawParticles() {
     ctx.arc(p.x, p.y, 3.5 * p.life, 0, Math.PI * 2);
     ctx.fillStyle = p.color;
     ctx.shadowColor = p.color;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 5;
     ctx.fill();
     ctx.restore();
   }
@@ -530,7 +580,7 @@ function updateBullet() {
     const dist = Math.hypot(bullet.x - t.x, bullet.y - t.y);
     if (dist < bullet.radius + t.radius) {
       t.alive = false;
-      spawnParticles(t.x, t.y, '#ff4d5e');
+      spawnParticles(t.x, t.y, '#F2A0A0');
       updateUI();
     }
   }
@@ -605,11 +655,27 @@ function checkLoseCondition() {
 function showMessage(text, showRestart) {
   messageEl.textContent = text;
   messageEl.style.display = 'block';
-  if (showRestart) restartBtn.style.display = 'block';
+  if (showRestart) {
+    restartBtn.style.display = 'block';
+    menuResultBtn.style.display = 'block';
+  }
 }
 function hideMessage() {
   messageEl.style.display = 'none';
   restartBtn.style.display = 'none';
+  menuResultBtn.style.display = 'none';
+}
+
+// Oyun içindeyken (nişan alırken/beklerken/sonuç ekranında) ana menüye dönüş
+function goToMainMenu() {
+  bullet = null;
+  bulletTrail = [];
+  particles = [];
+  isAiming = false;
+  hideMessage();
+  howToPanel.style.display = 'none';
+  currentState = GAME_STATE.MENU;
+  mainMenu.style.display = 'flex';
 }
 
 // =========================================================
@@ -643,8 +709,8 @@ function drawBackground() {
   }
 
   const spot = ctx.createRadialGradient(launcher.x, launcher.y, 0, launcher.x, launcher.y, 180);
-  spot.addColorStop(0, 'rgba(76,201,240,0.10)');
-  spot.addColorStop(1, 'rgba(76,201,240,0)');
+  spot.addColorStop(0, 'rgba(159,211,222,0.08)');
+  spot.addColorStop(1, 'rgba(159,211,222,0)');
   ctx.fillStyle = spot;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
@@ -691,16 +757,16 @@ function drawTargets() {
     const pulseScale = 1 + Math.sin(t.pulse) * 0.06;
 
     ctx.save();
-    ctx.shadowColor = '#ff4d5e';
-    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#F2A0A0';
+    ctx.shadowBlur = 8;
 
     const grad = ctx.createRadialGradient(
       t.x - t.radius * 0.3, t.y - t.radius * 0.3, 1,
       t.x, t.y, t.radius * pulseScale
     );
-    grad.addColorStop(0, '#ff8a94');
-    grad.addColorStop(0.6, '#ff4d5e');
-    grad.addColorStop(1, '#c81d2e');
+    grad.addColorStop(0, '#F7C6C6');
+    grad.addColorStop(0.6, '#F2A0A0');
+    grad.addColorStop(1, '#D98080');
 
     ctx.beginPath();
     ctx.arc(t.x, t.y, t.radius * pulseScale, 0, Math.PI * 2);
@@ -726,13 +792,13 @@ function drawLauncher() {
   ctx.translate(launcher.x, launcher.y);
   ctx.rotate(launcher.angle + Math.PI / 2);
 
-  ctx.shadowColor = '#4cc9f0';
-  ctx.shadowBlur = 20;
+  ctx.shadowColor = '#9FD3DE';
+  ctx.shadowBlur = 8;
 
   const grad = ctx.createRadialGradient(0, -launcher.radius * 0.3, 1, 0, 0, launcher.radius);
-  grad.addColorStop(0, '#8fe3ff');
-  grad.addColorStop(0.6, '#4cc9f0');
-  grad.addColorStop(1, '#2f8ec7');
+  grad.addColorStop(0, '#D8ECEF');
+  grad.addColorStop(0.6, '#9FD3DE');
+  grad.addColorStop(1, '#7FA6C9');
 
   ctx.beginPath();
   ctx.arc(0, 0, launcher.radius, 0, Math.PI * 2);
@@ -766,7 +832,7 @@ function drawBulletTrail() {
 function drawBullet() {
   ctx.save();
   ctx.shadowColor = '#ffffff';
-  ctx.shadowBlur = 14;
+  ctx.shadowBlur = 6;
   ctx.beginPath();
   ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
@@ -783,7 +849,7 @@ function drawAimGuide() {
   const trajectory = calculateAimTrajectory(launcher.x, launcher.y, dirX, dirY);
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(140, 230, 255, 0.55)';
+  ctx.strokeStyle = 'rgba(180, 210, 220, 0.5)';
   ctx.lineWidth = 2;
   ctx.setLineDash([9, 9]);
   ctx.lineDashOffset = -frameCount * 0.6;
@@ -795,17 +861,17 @@ function drawAimGuide() {
 
   const hitPoint = trajectory[trajectory.length - 1];
   ctx.save();
-  ctx.shadowColor = '#8ce6ff';
-  ctx.shadowBlur = 12;
+  ctx.shadowColor = '#C7E4E9';
+  ctx.shadowBlur = 4;
   ctx.beginPath();
   ctx.arc(hitPoint.x, hitPoint.y, 5, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(200, 245, 255, 0.9)';
+  ctx.fillStyle = 'rgba(210, 230, 235, 0.85)';
   ctx.fill();
   ctx.restore();
 
   const power = Math.min(dist, MAX_DRAG_DISTANCE) / MAX_DRAG_DISTANCE;
   ctx.save();
-  ctx.strokeStyle = `rgba(76, 201, 240, ${0.5 + power * 0.4})`;
+  ctx.strokeStyle = `rgba(159, 211, 222, ${0.45 + power * 0.35})`;
   ctx.lineWidth = 2 + power * 3;
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -875,6 +941,9 @@ howToBtn.addEventListener('click', () => {
 closeHowTo.addEventListener('click', () => {
   howToPanel.style.display = 'none';
 });
+
+menuResultBtn.addEventListener('click', goToMainMenu);
+menuBackBtn.addEventListener('click', goToMainMenu);
 
 // Oyunu "Oyna" tuşuna basılana kadar menüde bekletmek için
 // başlangıçta seviyeyi hazırlıyoruz ama menü ekranı üstte kalıyor.
